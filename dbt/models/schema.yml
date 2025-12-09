@@ -1,0 +1,41 @@
+version: 2
+
+sources:
+  - name: aws_lakehouse
+    description: "Raw datasets landed from S3/Glue"
+    schema: lakehouse_raw
+    tables:
+      - name: erp_orders
+        description: "Orders from ERP"
+        freshness:
+          warn_after: {count: 12, period: hour}
+          error_after: {count: 24, period: hour}
+        loaded_at_field: dt
+      - name: crm_leads
+        description: "CRM leads"
+        loaded_at_field: dt
+      - name: web_events
+        description: "Web events JSON"
+        loaded_at_field: dt
+      - name: products
+        description: "Product catalog"
+        loaded_at_field: dt
+
+models:
+  - name: stg_erp_orders
+    description: "Casts ERP orders columns"
+  - name: stg_crm_leads
+    description: "Casts CRM leads columns"
+  - name: stg_products
+    description: "Casts product columns"
+  - name: stg_web_events
+    description: "Web events flattened"
+  - name: fct_daily_store_metrics
+    description: "Daily performance by store"
+    columns:
+      - name: store_id
+        tests:
+          - not_null
+      - name: dt
+        tests:
+          - not_null

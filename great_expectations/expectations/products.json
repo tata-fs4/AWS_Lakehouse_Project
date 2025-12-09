@@ -1,0 +1,7 @@
+{
+  "expectations": [
+    {"expectation_type": "expect_table_columns_to_match_ordered_list", "kwargs": {"column_list": ["product_id", "name", "category", "price", "active", "store_id", "dt"]}},
+    {"expectation_type": "expect_column_values_to_be_between", "kwargs": {"column": "price", "min_value": 0}}
+  ],
+  "meta": {"notes": "Product catalog schema and positive price"}
+}

@@ -1,0 +1,5 @@
+lead_id,name,email,source,status,store_id,dt
+L001,Alice Smith,alice@example.com,web,contacted,store_01,2024-06-01
+L002,Bob Jones,bob@example.com,event,qualified,store_02,2024-06-02
+L003,Carla Gomez,carla@example.com,partner,converted,store_01,2024-06-03
+L004,Daniel Ito,daniel@example.com,web,new,store_03,2024-06-03

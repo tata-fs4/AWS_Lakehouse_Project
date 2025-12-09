@@ -1,0 +1,8 @@
+{
+  "expectations": [
+    {"expectation_type": "expect_table_columns_to_match_ordered_list", "kwargs": {"column_list": ["event_id", "visitor_id", "store_id", "dt", "page", "event_type", "metadata"]}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "event_id"}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "store_id"}}
+  ],
+  "meta": {"notes": "Web events schema and key presence"}
+}

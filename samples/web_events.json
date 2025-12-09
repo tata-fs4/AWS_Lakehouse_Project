@@ -1,0 +1,4 @@
+{"event_id":"E001","visitor_id":"V100","store_id":"store_01","dt":"2024-06-01","page":"/home","event_type":"page_view","metadata":{"utm_source":"newsletter"}}
+{"event_id":"E002","visitor_id":"V101","store_id":"store_01","dt":"2024-06-01","page":"/product/P001","event_type":"click","metadata":{"cta":"add_to_cart"}}
+{"event_id":"E003","visitor_id":"V200","store_id":"store_02","dt":"2024-06-02","page":"/search","event_type":"page_view","metadata":{"query":"monitor"}}
+{"event_id":"E004","visitor_id":"V300","store_id":"store_03","dt":"2024-06-03","page":"/home","event_type":"page_view","metadata":{}}

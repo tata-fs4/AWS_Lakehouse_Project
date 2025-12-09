@@ -1,0 +1,6 @@
+order_id,customer_id,store_id,dt,order_value,status
+1001,C001,store_01,2024-06-01,249.99,shipped
+1002,C002,store_01,2024-06-01,89.50,processing
+1003,C003,store_02,2024-06-02,120.00,cancelled
+1004,C002,store_02,2024-06-03,45.90,processing
+1005,C004,store_03,2024-06-03,560.10,shipped

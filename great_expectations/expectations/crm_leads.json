@@ -1,0 +1,7 @@
+{
+  "expectations": [
+    {"expectation_type": "expect_table_columns_to_match_ordered_list", "kwargs": {"column_list": ["lead_id", "name", "email", "source", "status", "store_id", "dt"]}},
+    {"expectation_type": "expect_column_values_to_match_regex", "kwargs": {"column": "email", "regex": "^.+@.+\\..+$"}}
+  ],
+  "meta": {"notes": "Email format and schema enforcement"}
+}

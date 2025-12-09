@@ -1,0 +1,5 @@
+product_id,name,category,price,active,store_id,dt
+P001,Noise Cancelling Headphones,Audio,199.99,true,store_01,2024-06-01
+P002,Wireless Mouse,Accessories,29.99,true,store_01,2024-06-01
+P003,4K Monitor,Displays,329.00,true,store_02,2024-06-02
+P004,USB-C Dock,Accessories,119.00,false,store_02,2024-06-02

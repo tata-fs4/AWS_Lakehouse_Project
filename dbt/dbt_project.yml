@@ -1,0 +1,21 @@
+name: aws_lakehouse
+version: '1.0'
+config-version: 2
+profile: aws_lakehouse
+model-paths: ["models"]
+seed-paths: ["seeds"]
+analysis-paths: ["analyses"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  aws_lakehouse:
+    +materialized: incremental
+    +incremental_strategy: merge
+    +on_schema_change: sync_all_columns
+    staging:
+      +materialized: view
+
+seeds:
+  aws_lakehouse:
+    +quote_columns: true

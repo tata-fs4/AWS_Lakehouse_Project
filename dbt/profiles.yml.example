@@ -1,0 +1,11 @@
+aws_lakehouse:
+  target: dev
+  outputs:
+    dev:
+      type: athena
+      s3_staging_dir: s3://lakehouse-temp/dbt/
+      region_name: us-east-1
+      schema: lakehouse_dev
+      database: lakehouse_dev
+      work_group: primary
+      threads: 4
