@@ -1,88 +1,107 @@
-# AWS Lakehouse com Airflow + dbt
+# AWS Lakehouse with Airflow + dbt
 
-Este diretório contém um exemplo opinativo de lakehouse na AWS com ingestão via Airflow/MWAA, catálogo no Glue, transformações dbt e publicação em Athena/Parquet particionado por `dt` e `store_id` com Z-Order.
+This repository contains an opinionated example of a lakehouse architecture on AWS, featuring ingestion with Airflow/MWAA, cataloging with AWS Glue, transformations with dbt, and publication in Athena using Parquet partitioned by `dt` and `store_id` with Z-Order layout optimization.
 
-## Componentes
-- **S3**: buckets `raw` e `curated` para landing e camadas processadas.
-- **Glue**: database e crawlers por domínio (ERP, CRM, web e catálogo de produtos).
-- **Airflow (MWAA)**: DAGs `ingest_{dominio}`, `validate_{dominio}`, `transform_{dominio}` e `publish_{dominio}` com retries, SLA handler e notificação Slack.
-- **Great Expectations**: suites mínimas em `great_expectations/expectations` executadas na etapa `validate_*`.
-- **dbt**: modelos de staging e fato `fct_daily_store_metrics` com manifest/docs gerados por `dbt docs generate` e armazenados no S3 `curated`.
-- **Athena**: views e consultas sobre a camada transformada; particionamento por `dt`/`store_id` e Z-Order planejado no layout dos arquivos.
-- **OpenLineage**: backend habilitado em MWAA para rastrear lineage das DAGs.
-- **Terraform**: provisiona S3, Glue, MWAA e IAM.
+## Components
 
-## Estrutura
-```
-airflow/dags/           # DAGs e callbacks
-samples/                # Dados simulados (ERP/CRM/web/products)
-dbt/                    # Projeto dbt (modelos, seeds e manifest/docs via dbt)
-great_expectations/     # Expectation suites básicas
-terraform/              # Infra-as-code para AWS
-Makefile                # Atalhos para deploy
+- **S3:** Raw and curated buckets for landing and processed layers.  
+- **Glue:** Databases and crawlers per domain (ERP, CRM, web, product catalog).  
+- **Airflow (MWAA):** DAGs `ingest_{domain}`, `validate_{domain}`, `transform_{domain}`, and `publish_{domain}` with retries, SLA handlers, and Slack notifications.  
+- **Great Expectations:** Minimal suites stored under `great_expectations/expectations`, executed during the `validate_*` stage.  
+- **dbt:** Staging models and the fact table `fct_daily_store_metrics`, with manifest/docs generated via `dbt docs generate` and stored in the curated bucket.  
+- **Athena:** Views and queries on the transformed layer; partitioning by `dt/store_id` with Z-Order reflected in file layout.  
+- **OpenLineage:** Backend enabled in MWAA for lineage tracking across DAGs.  
+- **Terraform:** Infrastructure provisioning for S3, Glue, MWAA, and IAM.
+
+## Structure
+
+airflow/dags/ # DAGs and callbacks
+samples/ # Simulated ERP/CRM/web/products datasets
+dbt/ # dbt project (models, seeds, manifest/docs)
+great_expectations/ # Basic expectation suites
+terraform/ # AWS IaC
+Makefile # Deployment shortcuts
 README.md
-```
 
-## Dados simulados
-Arquivos CSV/JSON em `samples/` refletem as fontes solicitadas: `erp_orders.csv`, `crm_leads.csv`, `web_events.json` e `products.csv`. Eles também são copiados para `dbt/seeds/` para execução local do dbt.
+## Simulated Data
 
-## Pipeline (DAG por domínio)
-1. **ingest_{dominio}**: lê da fonte `s3://lakehouse-raw/<dominio>/` e dispara crawler Glue.
-2. **validate_{dominio}**: executa checkpoint Great Expectations correspondente.
-3. **transform_{dominio}**: roda `dbt build --select <dominio>` (incremental, partição `dt`/`store_id`, estratégia MERGE e Z-Order aplicado na escrita Parquet).
-4. **publish_{dominio}**: cria/atualiza views Athena na camada curated e publica manifest/docs do dbt.
+CSV/JSON files in `samples/` represent the expected domains: `erp_orders.csv`, `crm_leads.csv`, `web_events.json`, and `products.csv`.  
+These files are also copied into `dbt/seeds/` for local dbt runs.
 
-Os DAGs incluem `retries`, `on_failure_callback` (Slack), `sla_miss_callback` e `max_active_runs=1`. OpenLineage é configurado via `airflow_configuration_options` no MWAA.
+## Pipeline (One DAG per Domain)
 
-## Deploy
-Requisitos: Terraform >=1.5, AWS CLI configurado, dbt-athena-community plugin e acesso à conta AWS.
+- **ingest_{domain}:** Reads from `s3://lakehouse-raw/<domain>/` and triggers the appropriate Glue crawler.  
+- **validate_{domain}:** Executes the corresponding Great Expectations checkpoint.  
+- **transform_{domain}:** Runs `dbt build --select <domain>`, using incremental models, partitioning by `dt/store_id`, `incremental_strategy: merge`, and applying Z-Order via optimized Parquet layout.  
+- **publish_{domain}:** Creates/updates Athena views in the curated layer and uploads dbt manifest/docs.  
 
-```bash
-make terraform-init           # inicializa backend
-make terraform-plan           # pré-visualiza mudanças (forneça TF_VAR_account_id etc.)
-make terraform-apply          # cria buckets, Glue e MWAA
-```
+DAGs include retries, `on_failure_callback` (Slack), `sla_miss_callback`, and `max_active_runs=1`.  
+OpenLineage is configured via `airflow_configuration_options` in MWAA.
 
-Após a infraestrutura, publique artefatos:
-```bash
+## Deployment
+
+### Requirements
+- Terraform >= 1.5  
+- AWS CLI configured  
+- `dbt-athena-community` installed  
+- AWS account with appropriate permissions  
+
+### Steps
+
+make terraform-init # initialize backend
+make terraform-plan # preview changes (provide TF_VAR_account_id, etc.)
+make terraform-apply # creates buckets, Glue, MWAA
+
+After provisioning, extract bucket names:
+
 export RAW_BUCKET=$(terraform -chdir=terraform output -raw raw_bucket)
 export CURATED_BUCKET=$(terraform -chdir=terraform output -raw curated_bucket)
 
-make package-dbt              # seeds + staging + marts + docs
-make upload-dags              # sincroniza DAGs para bucket fonte do MWAA
-make upload-dbt-docs          # publica manifest/docs no bucket curated
-```
+Then publish artifacts:
 
-### Execução local (QA)
-- Dependências Python: pandas (já disponível no ambiente da imagem base).
-- Rode um ciclo ponta-a-ponta usando os dados simulados:
+make package-dbt # seeds + staging + marts + docs
+make upload-dags # sync DAGs to MWAA source bucket
+make upload-dbt-docs # publish manifest/docs to curated bucket
 
-```bash
+## Local Execution (QA)
+
+Python dependencies: `pandas` (already included in MWAA base image).  
+Run an end-to-end local workflow using simulated data:
+
 cd aws_lakehouse_project
 python local_runner.py --output-dir ./local_output
-# ou make local-run
-``` 
 
-O comando valida os datasets com as suites Great Expectations em `great_expectations/expectations`, cria as tabelas de staging
-equivalentes aos modelos dbt e materializa a `fct_daily_store_metrics` em `local_output/curated/` para conferência.
+## or: make local-run
+## This command:
+
+- Validates datasets using GE suites in `great_expectations/expectations`  
+- Creates staging tables mimicking dbt behavior  
+- Materializes `fct_daily_store_metrics` under `local_output/curated/`  
 
 ## dbt
-- Arquivo `profiles.yml.example` traz configuração para Athena.
-- Models em `dbt/models` usam `incremental_strategy: merge` e aplicam recorte de 7 dias em incrementais.
-- `dbt docs generate` cria manifest/catalog/documentation para auditoria.
+
+- `profiles.yml.example` contains Athena configuration.  
+- Models use `incremental_strategy: merge` with a 7-day sliding window for incremental updates.  
+- `dbt docs generate` produces manifest/catalog/docs for auditing.
 
 ## Great Expectations
-Suites JSON simples por domínio em `great_expectations/expectations`. Ajuste checkpoints/validações no Airflow conforme necessidade.
 
-## Observabilidade
-- Slack: defina `slack_webhook_conn_id` no Airflow Variable.
-- Email SLA: defina `ops_email` no Airflow Variable.
-- OpenLineage: configure `openlineage_endpoint` em Terraform para apontar para seu backend (Marquez ou serviço compatível).
+- Simple JSON expectation suites per domain in `great_expectations/expectations`.  
+- Customize checkpoints or validation flows in Airflow as needed.
 
-## Segurança e IAM
-Políticas mínimas para Glue/MWAA permitem acesso a S3, Glue, Athena e CloudWatch Logs. Ajuste `iam:PassRole` e restrições de recursos conforme governança.
+## Observability
 
-## Próximos passos
-- Substituir `PythonOperator` por operadores nativos (por exemplo, `AWSGlueCrawlerOperator`, `GreatExpectationsOperator`, `DbtRunOperator`).
-- Adicionar testes unitários para DAGs e suites GE.
-- Automatizar Z-Order com `ALTER TABLE ... ORDER BY` via Athena/Trino após load.
+- **Slack:** Set `slack_webhook_conn_id` in Airflow Variables.  
+- **Email SLA:** Configure `ops_email` in Airflow Variables.  
+- **OpenLineage:** Point `openlineage_endpoint` in Terraform to your backend (Marquez or another compatible service).
+
+## Security and IAM
+
+Minimum IAM policies for Glue and MWAA allow access to S3, Glue, Athena, and CloudWatch Logs.  
+Adjust `iam:PassRole` and resource restrictions based on your governance model.
+
+## Next Steps
+
+- Replace `PythonOperator` with native operators (e.g., `AWSGlueCrawlerOperator`, `GreatExpectationsOperator`, `DbtRunOperator`).  
+- Add unit tests for DAGs and Great Expectations suites.  
+- Automate Z-Order via `ALTER TABLE ... ORDER BY` in Athena/Trino after data loads.
